@@ -1,3 +1,138 @@
+/* Global Vars */
+:root {
+    --primary: #ff4757;
+    --secondary: #2f3542;
+    --bg: #f1f2f6;
+    --card: #ffffff;
+}
+
+body {
+    background-color: var(--bg);
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
 .app-container {
-    padding: 2px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin: 20px;
+    text-align: left;
+}
+
+h2 {
+    margin-top: 0;
+    color: var(--secondary);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #dfe4ea;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+button {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    width: 100%;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+button.secondary,
+button.link-btn {
+    background: none;
+    color: #747d8c;
+    border: 1px solid #ccc;
+}
+
+button.link-btn {
+    border: none;
+    width: auto;
+    padding: 5px;
+}
+
+.swipe-container .header {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
+}
+
+.listing-card {
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.listing-image {
+    background-color: #eee;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.price {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--primary);
+    margin: 5px 0;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    padding: 0 20px;
+}
+
+.swipe-btn {
+    flex: 1;
+    padding: 20px;
+    font-size: 1.2em;
+}
+
+.swipe-btn.left {
+    background-color: #ff6b6b;
+}
+
+.swipe-btn.right {
+    background-color: #2ed573;
+}
+
+.message-card textarea {
+    margin: 15px 0;
+    font-family: monospace;
+}
+
+.profile-form .form-row {
+    display: flex;
+    gap: 10px;
 }
