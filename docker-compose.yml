@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: wohnswipe-db
+    environment:
+      POSTGRES_USER: wohnswipe
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: wohnswipe
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wohnswipe"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: wohnswipe-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/wohnswipe
+      SPRING_DATASOURCE_USERNAME: wohnswipe
+      SPRING_DATASOURCE_PASSWORD: password
+      AI_SERVICE_URL: http://ai-service:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+
+  ai-service:
+    build: ./ai-service
+    container_name: wohnswipe-ai-service
+    ports:
+      - "8000:8000"
+    restart: on-failure
+
+  frontend:
+    build: ./frontend
+    container_name: wohnswipe-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  postgres_data:
