@@ -14,23 +14,25 @@ const PrivateRoute = ({ children }) => {
 function App() {
     return (
         <AuthProvider>
-            <Router>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/profile" element={
-                        <PrivateRoute>
-                            <Profile />
-                        </PrivateRoute>
-                    } />
-                    <Route path="/swipe" element={
-                        <PrivateRoute>
-                            <Swipe />
-                        </PrivateRoute>
-                    } />
-                    <Route path="/" element={<Navigate to="/swipe" />} />
-                </Routes>
-            </Router>
+            <div className="app-container">
+                <Router>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/profile" element={
+                            <PrivateRoute>
+                                <Profile />
+                            </PrivateRoute>
+                        } />
+                        <Route path="/swipe" element={
+                            <PrivateRoute>
+                                <Swipe />
+                            </PrivateRoute>
+                        } />
+                        <Route path="/" element={<Navigate to="/swipe" />} />
+                    </Routes>
+                </Router>
+            </div>
         </AuthProvider>
     );
 }

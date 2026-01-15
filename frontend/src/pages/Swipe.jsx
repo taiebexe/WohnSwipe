@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import Card from '../components/Card';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaTimes, FaHeart, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 
 export default function Swipe() {
     const [listings, setListings] = useState([]);
@@ -24,6 +26,10 @@ export default function Swipe() {
         const listing = listings[currentIndex];
         if (!listing) return;
 
+        // Optimistic UI update: remove card immediately
+        const nextIndex = currentIndex + 1;
+        setCurrentIndex(nextIndex);
+
         try {
             const res = await api.post('/swipes', {
                 listingId: listing.id,
@@ -32,70 +38,157 @@ export default function Swipe() {
 
             if (res.data.match && res.data.message) {
                 setGeneratedMessage(res.data.message);
-            } else {
-                nextCard();
             }
         } catch (err) {
             console.error(err);
+            // Revert if error? For now, just log it.
         }
     };
 
-    const nextCard = () => {
-        setCurrentIndex(prev => prev + 1);
-        setGeneratedMessage(null);
-    };
-
     const currentListing = listings[currentIndex];
-
-    if (generatedMessage) {
-        return (
-            <div className="card message-card">
-                <h2>It's a Match! 🎉</h2>
-                <p>AI generated inquiry for this apartment:</p>
-                <textarea readOnly value={generatedMessage} rows={10} />
-                <div className="buttons">
-                    <button onClick={() => navigator.clipboard.writeText(generatedMessage)}>Copy to Clipboard</button>
-                    <button onClick={nextCard}>Keep Swiping</button>
-                </div>
-            </div>
-        );
-    }
-
-    if (!currentListing) {
-        return (
-            <div className="card">
-                <h2>No more listings!</h2>
-                <p>Check back later or adjust your filters.</p>
-                <button onClick={fetchFeed}>Refresh</button>
-                <button onClick={logout} className="secondary">Logout</button>
-            </div>
-        );
-    }
+    const nextListing = listings[currentIndex + 1];
 
     return (
-        <div className="swipe-container">
-            <div className="header">
-                <Link to="/profile">Edit Profile</Link>
-                <button onClick={logout} className="link-btn">Logout</button>
+        <div className="full-screen" style={{ display: 'flex', flexDirection: 'column', background: '#f5f7fa' }}>
+            {/* Header */}
+            <div style={{
+                padding: '15px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                zIndex: 10
+            }}>
+                <button onClick={logout} style={{ background: 'none', color: '#ccc', padding: 0 }}>
+                    <FaSignOutAlt size={24} />
+                </button>
+                <div style={{ fontWeight: 'bold', color: '#ff4757', fontSize: '1.2rem' }}>WohnSwipe</div>
+                <button style={{ background: 'none', color: '#ccc', padding: 0 }}>
+                    <FaUserCircle size={28} />
+                </button>
             </div>
 
-            <div className="card listing-card">
-                {/* Placeholder Image */}
-                <div className="listing-image" style={{ backgroundColor: '#ddd', height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span>Apartment Image</span>
-                </div>
-                <div className="listing-details">
-                    <h2>{currentListing.title}</h2>
-                    <p className="price">{currentListing.rent} € • {currentListing.rooms} Rooms • {currentListing.sizeSqm} m²</p>
-                    <p className="location">📍 {currentListing.district}</p>
-                    <p className="desc">{currentListing.description}</p>
-                    <p className="avail">Available: {currentListing.availableFrom}</p>
-                </div>
+            {/* Card Stack */}
+            <div className="card-container" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                <AnimatePresence>
+                    {generatedMessage && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0 }}
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                background: 'rgba(0,0,0,0.85)',
+                                color: 'white',
+                                zIndex: 100,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '30px'
+                            }}
+                        >
+                            <h1 style={{ color: '#2ed573', fontSize: '3rem', marginBottom: '20px' }}>It's a Match!</h1>
+                            <p style={{ color: '#white', marginBottom: '20px', textAlign: 'center' }}>
+                                Here's your AI-generated inquiry:
+                            </p>
+                            <textarea
+                                readOnly
+                                value={generatedMessage}
+                                style={{
+                                    width: '100%',
+                                    height: '150px',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    color: 'white',
+                                    border: '1px solid #555',
+                                    marginBottom: '20px',
+                                    borderRadius: '10px'
+                                }}
+                            />
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(generatedMessage);
+                                    setGeneratedMessage(null);
+                                }}
+                                style={{ background: 'white', color: 'black', width: '100%', borderRadius: '30px', padding: '15px' }}
+                            >
+                                Copy & Keep Swiping
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Background (Next) Card */}
+                {nextListing && (
+                    <Card
+                        key={nextListing.id}
+                        data={nextListing}
+                        style={{ transform: 'scale(0.95)', top: '10px', opacity: 0.5, zIndex: 0 }}
+                        onSwipe={() => { }} // Non-interactive
+                    />
+                )}
+
+                {/* Foreground (Current) Card */}
+                {currentListing ? (
+                    <Card
+                        key={currentListing.id}
+                        data={currentListing}
+                        onSwipe={handleSwipe}
+                        style={{ zIndex: 1 }}
+                    />
+                ) : (
+                    <div className="center-flex" style={{ height: '100%', flexDirection: 'column', color: '#aaa' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🏙️</div>
+                        <h3>No more apartments</h3>
+                        <p>Check back later!</p>
+                        <button onClick={fetchFeed} style={{ marginTop: '20px', width: 'auto' }}>Refresh Feed</button>
+                    </div>
+                )}
             </div>
 
-            <div className="actions">
-                <button className="swipe-btn left" onClick={() => handleSwipe('LEFT')}>PASS ❌</button>
-                <button className="swipe-btn right" onClick={() => handleSwipe('RIGHT')}>SWIPE ✅</button>
+            {/* Footer Actions */}
+            <div style={{
+                height: '100px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '30px',
+                paddingBottom: '20px'
+            }}>
+                <button
+                    onClick={() => handleSwipe('LEFT')}
+                    className="center-flex"
+                    style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        background: 'white',
+                        boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
+                        color: '#ff6b6b',
+                        fontSize: '24px'
+                    }}
+                >
+                    <FaTimes />
+                </button>
+
+                <button
+                    onClick={() => handleSwipe('RIGHT')}
+                    className="center-flex"
+                    style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(45deg, #ff4757, #ff6b81)',
+                        boxShadow: '0 5px 15px rgba(255, 71, 87, 0.4)',
+                        color: 'white',
+                        fontSize: '24px'
+                    }}
+                >
+                    <FaHeart />
+                </button>
             </div>
         </div>
     );
