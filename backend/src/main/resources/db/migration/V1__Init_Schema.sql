@@ -17,7 +17,7 @@ CREATE TABLE user_profiles (
     bio TEXT,
     districts VARCHAR(255), -- Comma separated
     max_rent DECIMAL(10, 2),
-    preferred_rooms DECIMAL(3, 1),
+    preferred_rooms DOUBLE PRECISION,
     tone VARCHAR(50) DEFAULT 'friendly'
 );
 
@@ -27,8 +27,8 @@ CREATE TABLE listings (
     district VARCHAR(255),
     address VARCHAR(255),
     rent DECIMAL(10, 2),
-    rooms DECIMAL(3, 1),
-    size_sqm DECIMAL(5, 1),
+    rooms DOUBLE PRECISION,
+    size_sqm DOUBLE PRECISION,
     description TEXT,
     available_from DATE,
     contact_email VARCHAR(255),
