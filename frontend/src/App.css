@@ -1,9 +1,9 @@
 /* Global Vars */
 :root {
-    --primary: #ff4757;
-    --primary-gradient: linear-gradient(45deg, #ff4757, #ff6b81);
+    --primary: #fbc531;
+    --primary-gradient: linear-gradient(45deg, #fbc531, #e1b12c);
     --secondary: #2f3542;
-    --bg: #f1f2f6;
+    --bg: #f5f6fa;
     --card-bg: #ffffff;
     --text-main: #2f3542;
     --text-sub: #747d8c;

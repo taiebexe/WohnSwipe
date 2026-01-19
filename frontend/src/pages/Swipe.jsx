@@ -61,7 +61,7 @@ export default function Swipe() {
                 <button onClick={logout} style={{ background: 'none', color: '#ccc', padding: 0 }}>
                     <FaSignOutAlt size={24} />
                 </button>
-                <div style={{ fontWeight: 'bold', color: '#ff4757', fontSize: '1.2rem' }}>WohnSwipe</div>
+                <div style={{ fontWeight: 'bold', color: '#fbc531', fontSize: '1.2rem' }}>WohnSwipe</div>
                 <button style={{ background: 'none', color: '#ccc', padding: 0 }}>
                     <FaUserCircle size={28} />
                 </button>
@@ -181,8 +181,8 @@ export default function Swipe() {
                         width: '60px',
                         height: '60px',
                         borderRadius: '50%',
-                        background: 'linear-gradient(45deg, #ff4757, #ff6b81)',
-                        boxShadow: '0 5px 15px rgba(255, 71, 87, 0.4)',
+                        background: 'linear-gradient(45deg, #fbc531, #e1b12c)',
+                        boxShadow: '0 5px 15px rgba(251, 197, 49, 0.4)',
                         color: 'white',
                         fontSize: '24px'
                     }}
