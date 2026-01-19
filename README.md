@@ -74,9 +74,9 @@ The system is composed of three main containerized services:
 
 ```mermaid
 graph LR
-    A[Frontend (React)] -- REST --> B[Backend (Spring Boot)];
-    B -- SQL --> C[(PostgreSQL)];
-    B -- HTTP --> D[AI Service (FastAPI)];
+    A["Frontend (React)"] -- REST --> B["Backend (Spring Boot)"]
+    B -- SQL --> C[("PostgreSQL")]
+    B -- HTTP --> D["AI Service (FastAPI)"]
 ```
 
 ---
