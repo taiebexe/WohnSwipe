@@ -26,6 +26,11 @@ services:
       SPRING_DATASOURCE_USERNAME: wohnswipe
       SPRING_DATASOURCE_PASSWORD: password
       AI_SERVICE_URL: http://ai-service:8000
+      SPRING_MAIL_HOST: ${SMTP_HOST:-smtp.sendgrid.net}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SMTP_USERNAME:-apikey}
+      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@wohnswipe.de}
     ports:
       - "8080:8080"
     depends_on:
@@ -38,6 +43,20 @@ services:
     container_name: wohnswipe-ai-service
     ports:
       - "8000:8000"
+    restart: on-failure
+
+  scraper-service:
+    build: ./scraper-service
+    container_name: wohnswipe-scraper
+    environment:
+      DATABASE_URL: postgresql://wohnswipe:password@db:5432/wohnswipe
+      SCRAPE_INTERVAL_HOURS: 4
+      MAX_LISTINGS_PER_RUN: 30
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
     restart: on-failure
 
   frontend:
