@@ -4,7 +4,7 @@ import { FaMapMarkerAlt, FaBed, FaRulerCombined, FaExternalLinkAlt } from 'react
 
 const SOURCE_BADGES = {
     WG_GESUCHT: { label: 'WG-Gesucht', color: '#f48024' },
-    SEED: { label: 'WohnSwipe', color: '#ff4757' },
+    SEED: { label: 'WohnSwipe', color: '#fbc531' },
 };
 
 export default function Card({ data, onSwipe, style }) {

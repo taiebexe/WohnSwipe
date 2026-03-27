@@ -34,7 +34,7 @@ export default function BottomNav() {
                             alignItems: 'center',
                             gap: '3px',
                             padding: '8px 16px',
-                            color: active ? '#ff4757' : '#aaa',
+                            color: active ? '#fbc531' : '#aaa',
                             transition: 'color 0.2s'
                         }}
                     >

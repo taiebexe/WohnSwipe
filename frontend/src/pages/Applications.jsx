@@ -198,7 +198,7 @@ export default function Applications() {
                                                         handleRetry(app.id);
                                                     }}
                                                     style={{
-                                                        background: '#ff4757', color: 'white',
+                                                        background: '#fbc531', color: 'white',
                                                         padding: '8px 14px', borderRadius: '8px',
                                                         fontSize: '0.8rem'
                                                     }}
@@ -235,7 +235,7 @@ export default function Applications() {
                             onClick={() => fetchApplications(page - 1)}
                             style={{
                                 padding: '8px 16px', borderRadius: '8px',
-                                background: page === 0 ? '#eee' : '#ff4757',
+                                background: page === 0 ? '#eee' : '#fbc531',
                                 color: page === 0 ? '#aaa' : 'white',
                                 fontSize: '0.85rem'
                             }}
@@ -250,7 +250,7 @@ export default function Applications() {
                             onClick={() => fetchApplications(page + 1)}
                             style={{
                                 padding: '8px 16px', borderRadius: '8px',
-                                background: page >= totalPages - 1 ? '#eee' : '#ff4757',
+                                background: page >= totalPages - 1 ? '#eee' : '#fbc531',
                                 color: page >= totalPages - 1 ? '#aaa' : 'white',
                                 fontSize: '0.85rem'
                             }}

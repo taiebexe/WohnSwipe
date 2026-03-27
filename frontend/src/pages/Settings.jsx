@@ -141,7 +141,7 @@ export default function Settings() {
                         />
                         <span style={{
                             fontWeight: 'bold', fontSize: '1.1rem',
-                            color: '#ff4757', minWidth: '30px', textAlign: 'center'
+                            color: '#fbc531', minWidth: '30px', textAlign: 'center'
                         }}>
                             {settings.dailyApplyLimit}
                         </span>
@@ -156,7 +156,7 @@ export default function Settings() {
                         width: '100%',
                         padding: '14px',
                         borderRadius: '12px',
-                        background: saved ? '#2ed573' : 'linear-gradient(45deg, #ff4757, #ff6b81)',
+                        background: saved ? '#2ed573' : 'linear-gradient(45deg, #fbc531, #e1b12c)',
                         color: 'white',
                         fontWeight: 'bold',
                         fontSize: '1rem',
