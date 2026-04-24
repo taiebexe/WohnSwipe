@@ -1,74 +1,129 @@
-# WohnSwipe MVP
+# WohnSwipe
 
-A Tinder-like swipe experience for finding apartments, featuring AI-generated inquiry messages.
+WohnSwipe is a swipe-based apartment discovery app for Berlin renters. It combines a curated listing feed, profile-aware matching, and AI-generated inquiry messages so users can move from browsing to landlord outreach faster.
 
-## Tech Stack
-- **Backend**: Java 17, Spring Boot, Spring Security (JWT), Spring Data JPA, Flyway
+## What It Does
+
+- Swipe through apartment listings ranked around saved renter preferences.
+- Build a renter profile with budget, districts, move-in timing, tone, and personal context.
+- Generate inquiry messages automatically when a listing is matched.
+- Revisit saved matches in a dedicated inbox instead of losing them after the swipe moment.
+- Run the full stack locally with Docker Compose.
+
+## Stack
+
+- **Frontend**: React 18, Vite, Framer Motion, React Router
+- **Backend**: Java 17, Spring Boot, Spring Security, Spring Data JPA, Flyway
 - **Database**: PostgreSQL 15
-- **AI Service**: Python 3.11, FastAPI (Mock AI logic included for MVP)
-- **Frontend**: React 18, Vite
+- **AI Service**: Python 3.11, FastAPI
 - **Infrastructure**: Docker Compose
 
-## Prerequisites
-- Docker & Docker Compose
+## Quick Start
 
-## getting Started
+### Prerequisites
 
-1. **Build and Run**
-   ```bash
-   docker-compose up --build
-   ```
-   This will start:
-   - Postgres (Port 5432)
-   - Backend (Port 8080)
-   - AI Service (Port 8000)
-   - Frontend (Port 3000)
+- Docker
+- Docker Compose
 
-2. **Access the App**
-   Open [http://localhost:3000](http://localhost:3000)
+### Run Everything
 
-3. **Usage Flow**
-   - **Register**: Create a new account.
-   - **Profile**: Fill in your profile details (important for matching logic).
-   - **Swipe**:
-     - **Swipe Left**: Discard listing.
-     - **Swipe Right**: Match! The AI Service generates a personalized inquiry message based on your profile and the listing.
-   - **Copy**: Copy the message to your clipboard.
+```bash
+docker compose up --build
+```
+
+This starts:
+
+- `frontend` on [http://localhost:3000](http://localhost:3000)
+- `backend` on [http://localhost:8080](http://localhost:8080)
+- `ai-service` on [http://localhost:8000](http://localhost:8000)
+- `db` on port `5432`
+
+### If Containers Are Already Running
+
+Frontend and backend source code is baked into the images, so code changes do **not** appear automatically in the running containers.
+
+Rebuild the changed services with:
+
+```bash
+docker compose up --build -d frontend backend
+```
+
+You only need to rebuild `ai-service` if you changed code inside `ai-service/`.
+
+## Product Flow
+
+1. Register a new account.
+2. Complete the renter profile.
+3. Browse the ranked discovery feed.
+4. Swipe right on a listing to generate an inquiry message.
+5. Open the matches inbox to revisit saved listings and copy outreach text later.
 
 ## Services
 
-### Backend (Spring Boot)
-- API Docs: `http://localhost:8080/swagger-ui/index.html` (Available after startup)
-- Data Seeding: Flyway migration `V1__Init_Schema.sql` automatically seeds 5 listings on startup.
+### Frontend
 
-### AI Service (FastAPI)
-- Acts as a microservice to generate German inquiry emails.
-- Currently uses a deterministic template engine for MVP reliability (no API keys required).
-- Endpoint: `POST /generate-message`
+- Product-style shell with navigation for `Discover`, `Matches`, and `Profile`
+- Curated swipe deck with richer listing cards, fit scoring, and improved empty/error states
+- Auth and onboarding flow that pushes incomplete users toward profile setup first
 
-### Frontend (React)
-- Minimalist UI with Auth, Profile Management, and Swipe Deck.
-- Connects to Backend via Vite Proxy (`/api` -> `backend:8080`).
+### Backend
 
-## Development
-To run services individually:
+- JWT-based authentication
+- Profile-backed listing feed
+- Match persistence and saved inquiry history
+- Swagger UI available at [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
-**Backend**:
+### Database
+
+- Managed by Flyway migrations
+- Demo listings are seeded automatically on startup
+- New migrations are applied when the backend container starts
+
+### AI Service
+
+- Generates inquiry messages for matched listings
+- Uses deterministic mock logic for local development, so no external API key is required
+
+## Resetting Local Data
+
+To wipe the local database and start from scratch:
+
 ```bash
-cd backend
-./mvnw spring-boot:run
+docker compose down -v
+docker compose up --build
 ```
 
-**Frontend**:
+This removes the Postgres volume and all locally stored app data.
+
+## Local Development Without Docker
+
+### Backend
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+### Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-**AI Service**:
+### AI Service
+
 ```bash
 cd ai-service
 pip install -r requirements.txt
 uvicorn main:app --reload
+```
+
+## Repo Structure
+
+```text
+frontend/    React client
+backend/     Spring Boot API
+ai-service/  FastAPI inquiry-message service
 ```

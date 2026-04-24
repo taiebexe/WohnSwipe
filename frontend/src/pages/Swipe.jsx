@@ -1,34 +1,89 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import api from '../api';
-import { useAuth } from '../context/AuthContext';
 import Card from '../components/Card';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaHeart, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
+import MatchModal from '../components/MatchModal';
+import { FaHeart, FaRedoAlt, FaSlidersH, FaTimes } from 'react-icons/fa';
+import {
+    formatCurrency,
+    formatDate,
+    getListingFit,
+    getProfileCompleteness,
+    normalizeProfile,
+    sortListingsByFit
+} from '../lib/product';
 
 export default function Swipe() {
     const [listings, setListings] = useState([]);
+    const [profile, setProfile] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [generatedMessage, setGeneratedMessage] = useState(null);
-    const { logout } = useAuth();
+    const [matchesCount, setMatchesCount] = useState(0);
+    const [matchModal, setMatchModal] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [isSwiping, setIsSwiping] = useState(false);
+    const [error, setError] = useState('');
+    const [copyState, setCopyState] = useState(false);
 
     useEffect(() => {
-        fetchFeed();
+        loadDiscover();
     }, []);
 
-    const fetchFeed = () => {
-        api.get('/listings/feed').then(res => {
-            setListings(res.data);
+    const loadDiscover = async (isRefresh = false) => {
+        setError('');
+
+        if (isRefresh) {
+            setRefreshing(true);
+        } else {
+            setLoading(true);
+        }
+
+        try {
+            const [feedResult, profileResult, matchesResult] = await Promise.allSettled([
+                api.get('/listings/feed'),
+                api.get('/me'),
+                api.get('/swipes/matches')
+            ]);
+
+            if (feedResult.status !== 'fulfilled' || profileResult.status !== 'fulfilled') {
+                throw new Error('Could not load feed data');
+            }
+
+            const normalizedProfile = normalizeProfile(profileResult.value.data);
+            const curatedListings = sortListingsByFit(feedResult.value.data, normalizedProfile);
+
+            setProfile(normalizedProfile);
+            setListings(curatedListings);
             setCurrentIndex(0);
-        });
+            setMatchModal(null);
+
+            if (matchesResult.status === 'fulfilled') {
+                setMatchesCount(matchesResult.value.data.length);
+            }
+        } catch (err) {
+            setError('We could not load your discovery feed right now.');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
     };
 
     const handleSwipe = async (direction) => {
-        const listing = listings[currentIndex];
-        if (!listing) return;
+        if (isSwiping) {
+            return;
+        }
 
-        // Optimistic UI update: remove card immediately
-        const nextIndex = currentIndex + 1;
-        setCurrentIndex(nextIndex);
+        const listing = listings[currentIndex];
+        if (!listing) {
+            return;
+        }
+
+        const activeIndex = currentIndex;
+        const fit = getListingFit(listing, profile);
+        setIsSwiping(true);
+        setCurrentIndex(activeIndex + 1);
+        setError('');
 
         try {
             const res = await api.post('/swipes', {
@@ -37,159 +92,262 @@ export default function Swipe() {
             });
 
             if (res.data.match && res.data.message) {
-                setGeneratedMessage(res.data.message);
+                setMatchesCount((previous) => previous + 1);
+                setMatchModal({
+                    listing,
+                    message: res.data.message,
+                    fit
+                });
             }
         } catch (err) {
-            console.error(err);
-            // Revert if error? For now, just log it.
+            setCurrentIndex(activeIndex);
+            setError('Swipe failed. Please try again.');
+        } finally {
+            setIsSwiping(false);
+        }
+    };
+
+    const handleCopyMessage = async () => {
+        if (!matchModal?.message) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(matchModal.message);
+            setCopyState(true);
+            window.setTimeout(() => setCopyState(false), 1800);
+        } catch (err) {
+            setError('Clipboard access is blocked in this browser context.');
         }
     };
 
     const currentListing = listings[currentIndex];
     const nextListing = listings[currentIndex + 1];
+    const currentFit = currentListing ? getListingFit(currentListing, profile) : null;
+    const profileCompletion = getProfileCompleteness(profile || {});
 
     return (
-        <div className="full-screen" style={{ display: 'flex', flexDirection: 'column', background: '#f5f7fa' }}>
-            {/* Header */}
-            <div style={{
-                padding: '15px 20px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                zIndex: 10
-            }}>
-                <button onClick={logout} style={{ background: 'none', color: '#ccc', padding: 0 }}>
-                    <FaSignOutAlt size={24} />
-                </button>
-                <div style={{ fontWeight: 'bold', color: '#ff4757', fontSize: '1.2rem' }}>WohnSwipe</div>
-                <button style={{ background: 'none', color: '#ccc', padding: 0 }}>
-                    <FaUserCircle size={28} />
-                </button>
-            </div>
-
-            {/* Card Stack */}
-            <div className="card-container" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-                <AnimatePresence>
-                    {generatedMessage && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0 }}
-                            style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: '100%',
-                                height: '100%',
-                                background: 'rgba(0,0,0,0.85)',
-                                color: 'white',
-                                zIndex: 100,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: '30px'
-                            }}
-                        >
-                            <h1 style={{ color: '#2ed573', fontSize: '3rem', marginBottom: '20px' }}>It's a Match!</h1>
-                            <p style={{ color: '#white', marginBottom: '20px', textAlign: 'center' }}>
-                                Here's your AI-generated inquiry:
-                            </p>
-                            <textarea
-                                readOnly
-                                value={generatedMessage}
-                                style={{
-                                    width: '100%',
-                                    height: '150px',
-                                    background: 'rgba(255,255,255,0.1)',
-                                    color: 'white',
-                                    border: '1px solid #555',
-                                    marginBottom: '20px',
-                                    borderRadius: '10px'
-                                }}
-                            />
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(generatedMessage);
-                                    setGeneratedMessage(null);
-                                }}
-                                style={{ background: 'white', color: 'black', width: '100%', borderRadius: '30px', padding: '15px' }}
-                            >
-                                Copy & Keep Swiping
-                            </button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Background (Next) Card */}
-                {nextListing && (
-                    <Card
-                        key={nextListing.id}
-                        data={nextListing}
-                        style={{ transform: 'scale(0.95)', top: '10px', opacity: 0.5, zIndex: 0 }}
-                        onSwipe={() => { }} // Non-interactive
-                    />
-                )}
-
-                {/* Foreground (Current) Card */}
-                {currentListing ? (
-                    <Card
-                        key={currentListing.id}
-                        data={currentListing}
-                        onSwipe={handleSwipe}
-                        style={{ zIndex: 1 }}
-                    />
-                ) : (
-                    <div className="center-flex" style={{ height: '100%', flexDirection: 'column', color: '#aaa' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🏙️</div>
-                        <h3>No more apartments</h3>
-                        <p>Check back later!</p>
-                        <button onClick={fetchFeed} style={{ marginTop: '20px', width: 'auto' }}>Refresh Feed</button>
+        <div className="page">
+            <section className="page-hero">
+                <div className="hero-grid">
+                    <div>
+                        <span className="eyebrow-chip">Discover feed</span>
+                        <h1>Apartment discovery that now feels curated, not random.</h1>
+                        <p>
+                            Listings are ranked against your budget, space target, timing and district preferences so the
+                            first card feels like a recommendation, not just the next row in a table.
+                        </p>
                     </div>
-                )}
+
+                    <div className="hero-stats">
+                        <div className="stat-card">
+                            <span className="stat-card__label">Listings remaining</span>
+                            <strong className="stat-card__value">{Math.max(listings.length - currentIndex, 0)}</strong>
+                        </div>
+                        <div className="stat-card">
+                            <span className="stat-card__label">Saved matches</span>
+                            <strong className="stat-card__value">{matchesCount}</strong>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {error && <div className="status-message status-message--error">{error}</div>}
+
+            {profileCompletion.percentage < 75 && (
+                <div className="helper-banner">
+                    <div>
+                        <strong>Profile {profileCompletion.percentage}% complete.</strong>
+                        <p>Add more context to improve ranking quality and inquiry tone.</p>
+                    </div>
+                    <Link to="/profile" className="secondary-button">
+                        <FaSlidersH />
+                        <span>Finish profile</span>
+                    </Link>
+                </div>
+            )}
+
+            <div className="discover-layout">
+                <div className="discover-main">
+                    <div className="deck-frame">
+                        {loading ? (
+                            <div className="section-card section-card--ghost">
+                                <h3>Preparing your deck</h3>
+                                <p>Pulling listings, preferences and past matches into one launch-ready flow.</p>
+                            </div>
+                        ) : (
+                            <>
+                                {nextListing && (
+                                    <Card
+                                        key={`peek-${nextListing.id}`}
+                                        data={nextListing}
+                                        fit={getListingFit(nextListing, profile)}
+                                        interactive={false}
+                                        style={{
+                                            transform: 'translateY(20px) scale(0.97)',
+                                            opacity: 0.78,
+                                            zIndex: 1
+                                        }}
+                                    />
+                                )}
+
+                                <AnimatePresence mode="popLayout">
+                                    {currentListing ? (
+                                        <Card
+                                            key={currentListing.id}
+                                            data={currentListing}
+                                            fit={currentFit}
+                                            onSwipe={handleSwipe}
+                                            style={{ zIndex: 2 }}
+                                        />
+                                    ) : (
+                                        <motion.div
+                                            className="empty-state"
+                                            initial={{ opacity: 0, y: 16 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                        >
+                                            <div className="empty-state__icon">🏙</div>
+                                            <h2>No more curated listings right now</h2>
+                                            <p>Refresh the feed, review saved matches, or tighten your preferences for the next pass.</p>
+                                            <div className="section-toolbar">
+                                                <button
+                                                    type="button"
+                                                    className="primary-button"
+                                                    onClick={() => loadDiscover(true)}
+                                                    disabled={refreshing}
+                                                >
+                                                    <FaRedoAlt />
+                                                    <span>{refreshing ? 'Refreshing' : 'Refresh feed'}</span>
+                                                </button>
+                                                <Link to="/matches" className="secondary-button">
+                                                    Review matches
+                                                </Link>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="swipe-controls">
+                        <button
+                            type="button"
+                            className="swipe-button swipe-button--pass"
+                            onClick={() => handleSwipe('LEFT')}
+                            disabled={!currentListing || isSwiping}
+                            aria-label="Pass on listing"
+                        >
+                            <FaTimes />
+                        </button>
+
+                        <button
+                            type="button"
+                            className="swipe-button swipe-button--refresh"
+                            onClick={() => loadDiscover(true)}
+                            disabled={refreshing}
+                            aria-label="Refresh feed"
+                        >
+                            <FaRedoAlt />
+                        </button>
+
+                        <button
+                            type="button"
+                            className="swipe-button swipe-button--like"
+                            onClick={() => handleSwipe('RIGHT')}
+                            disabled={!currentListing || isSwiping}
+                            aria-label="Like listing"
+                        >
+                            <FaHeart />
+                        </button>
+                    </div>
+
+                    <p className="swipe-hint">Drag the card left or right, or use the controls below for quick decisions.</p>
+                </div>
+
+                <aside className="discover-sidebar">
+                    <div className="section-card">
+                        <div className="section-card__header">
+                            <div>
+                                <span className="section-card__eyebrow">Search brief</span>
+                                <h2>What the feed is optimizing for</h2>
+                            </div>
+                        </div>
+
+                        <div className="detail-list">
+                            <div className="detail-list__item">
+                                <span>Budget</span>
+                                <strong>{profile?.maxRent ? formatCurrency(profile.maxRent) : 'Flexible'}</strong>
+                            </div>
+                            <div className="detail-list__item">
+                                <span>Move-in target</span>
+                                <strong>{profile?.moveInDate ? formatDate(profile.moveInDate) : 'Flexible'}</strong>
+                            </div>
+                            <div className="detail-list__item">
+                                <span>Minimum rooms</span>
+                                <strong>{profile?.preferredRooms || 'Open'}</strong>
+                            </div>
+                            <div className="detail-list__item">
+                                <span>Preferred districts</span>
+                                <strong>{profile?.districts || 'Not set yet'}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="section-card">
+                        <div className="section-card__header">
+                            <div>
+                                <span className="section-card__eyebrow">Current top pick</span>
+                                <h2>{currentListing ? currentListing.title : 'Awaiting next listing'}</h2>
+                            </div>
+                        </div>
+
+                        {currentListing && currentFit ? (
+                            <>
+                                <div className="detail-list">
+                                    <div className="detail-list__item">
+                                        <span>Match score</span>
+                                        <strong>{currentFit.score}%</strong>
+                                    </div>
+                                    <div className="detail-list__item">
+                                        <span>Price</span>
+                                        <strong>{formatCurrency(currentListing.rent)}</strong>
+                                    </div>
+                                    <div className="detail-list__item">
+                                        <span>Available</span>
+                                        <strong>{formatDate(currentListing.availableFrom)}</strong>
+                                    </div>
+                                </div>
+
+                                <div className="chip-group">
+                                    {currentFit.reasons.map((reason) => (
+                                        <span className="chip chip--active" key={reason}>
+                                            {reason}
+                                        </span>
+                                    ))}
+                                    {currentFit.notes.map((note) => (
+                                        <span className="chip" key={note}>
+                                            {note}
+                                        </span>
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            <p>Refresh the feed or revisit your profile to keep the shortlist moving.</p>
+                        )}
+                    </div>
+                </aside>
             </div>
 
-            {/* Footer Actions */}
-            <div style={{
-                height: '100px',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '30px',
-                paddingBottom: '20px'
-            }}>
-                <button
-                    onClick={() => handleSwipe('LEFT')}
-                    className="center-flex"
-                    style={{
-                        width: '60px',
-                        height: '60px',
-                        borderRadius: '50%',
-                        background: 'white',
-                        boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-                        color: '#ff6b6b',
-                        fontSize: '24px'
-                    }}
-                >
-                    <FaTimes />
-                </button>
-
-                <button
-                    onClick={() => handleSwipe('RIGHT')}
-                    className="center-flex"
-                    style={{
-                        width: '60px',
-                        height: '60px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(45deg, #ff4757, #ff6b81)',
-                        boxShadow: '0 5px 15px rgba(255, 71, 87, 0.4)',
-                        color: 'white',
-                        fontSize: '24px'
-                    }}
-                >
-                    <FaHeart />
-                </button>
-            </div>
+            <MatchModal
+                match={matchModal}
+                copied={copyState}
+                onCopy={handleCopyMessage}
+                onClose={() => {
+                    setMatchModal(null);
+                    setCopyState(false);
+                }}
+            />
         </div>
     );
 }

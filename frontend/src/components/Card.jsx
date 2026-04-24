@@ -1,13 +1,20 @@
-import React from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { FaMapMarkerAlt, FaBed, FaRulerCombined } from 'react-icons/fa';
+import { FaBed, FaCalendarAlt, FaMapMarkerAlt, FaRulerCombined } from 'react-icons/fa';
+import { formatCurrency, formatDate, getListingTheme } from '../lib/product';
 
-export default function Card({ data, onSwipe, style }) {
+export default function Card({ data, fit, onSwipe, style, interactive = true }) {
     const x = useMotionValue(0);
-    const rotate = useTransform(x, [-200, 200], [-15, 15]);
-    const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
+    const rotate = useTransform(x, [-220, 220], [-12, 12]);
+    const opacity = useTransform(x, [-260, -160, 0, 160, 260], [0.2, 1, 1, 1, 0.2]);
+    const likeOpacity = useTransform(x, [0, 50, 160], [0, 0.35, 1]);
+    const nopeOpacity = useTransform(x, [-160, -50, 0], [1, 0.35, 0]);
+    const theme = getListingTheme(data);
 
-    const handleDragEnd = (event, info) => {
+    const handleDragEnd = (_, info) => {
+        if (!interactive) {
+            return;
+        }
+
         if (info.offset.x > 100) {
             onSwipe('RIGHT');
         } else if (info.offset.x < -100) {
@@ -15,8 +22,21 @@ export default function Card({ data, onSwipe, style }) {
         }
     };
 
+    const heroStyle = data.imageUrl
+        ? {
+              backgroundImage: `linear-gradient(180deg, rgba(20, 18, 18, 0.05) 0%, rgba(20, 18, 18, 0.65) 100%), url(${data.imageUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+          }
+        : {
+              background: theme.gradient
+          };
+
+    const reasons = fit?.reasons?.length ? fit.reasons : ['Good starter option while you refine your preferences'];
+
     return (
         <motion.div
+            className={`listing-card${interactive ? '' : ' listing-card--peek'}`}
             style={{
                 ...style,
                 x,
@@ -25,70 +45,93 @@ export default function Card({ data, onSwipe, style }) {
                 position: 'absolute',
                 top: 0,
                 width: '100%',
-                maxWidth: '400px', // constrain width within container
-                height: '600px',
-                borderRadius: '20px',
-                backgroundColor: '#fff',
-                boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-                cursor: 'grab',
-                overflow: 'hidden',
                 userSelect: 'none'
             }}
-            drag="x"
+            initial={{ opacity: 0, y: 26, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.28 }}
+            drag={interactive ? 'x' : false}
             dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.8}
             onDragEnd={handleDragEnd}
-            whileTap={{ cursor: 'grabbing' }}
+            whileTap={interactive ? { cursor: 'grabbing', scale: 0.995 } : undefined}
         >
-            {/* Image Area */}
-            <div style={{
-                height: '70%',
-                backgroundColor: '#eee',
-                backgroundImage: 'url(https://source.unsplash.com/random/800x600/?apartment,interior)',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                position: 'relative'
-            }}>
-                <div style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    width: '100%',
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
-                    padding: '20px',
-                    color: 'white'
-                }}>
-                    <h2 style={{ color: 'white', marginBottom: '5px', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{data.rent} €</h2>
-                    <p style={{ color: '#eee', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <FaMapMarkerAlt /> {data.district}
-                    </p>
+            <div className="listing-card__hero" style={heroStyle}>
+                <div className="listing-card__pattern" />
+                <div className="listing-card__overlay" />
+
+                {interactive && (
+                    <>
+                        <motion.div className="listing-card__badge listing-card__badge--nope" style={{ opacity: nopeOpacity }}>
+                            Pass
+                        </motion.div>
+                        <motion.div className="listing-card__badge listing-card__badge--like" style={{ opacity: likeOpacity }}>
+                            Invite
+                        </motion.div>
+                    </>
+                )}
+
+                <div className="listing-card__topline">
+                    <span className="pill pill--light">{theme.vibe}</span>
+                    {fit && <span className="pill pill--light">{fit.score}% match</span>}
+                </div>
+
+                <div className="listing-card__hero-bottom">
+                    <div className="listing-card__hero-copy">
+                        <h2 className="listing-card__price">{formatCurrency(data.rent)}</h2>
+                        <p className="listing-card__district">
+                            <FaMapMarkerAlt />
+                            <span>{data.district}</span>
+                        </p>
+                    </div>
+                    <span className="listing-card__fit">{fit?.label ?? 'Curated pick'}</span>
                 </div>
             </div>
 
-            {/* Content Area */}
-            <div style={{ padding: '20px' }}>
-                <h3 style={{ marginBottom: '10px' }}>{data.title}</h3>
-
-                <div style={{ display: 'flex', gap: '15px', color: '#555', marginBottom: '15px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <FaBed /> {data.rooms} Rooms
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <FaRulerCombined /> {data.sizeSqm} m²
+            <div className="listing-card__content">
+                <div className="listing-card__title-row">
+                    <div>
+                        <h3>{data.title}</h3>
+                        <p className="listing-card__address">{data.address}</p>
                     </div>
                 </div>
 
-                <p style={{
-                    fontSize: '0.9rem',
-                    color: '#777',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden'
-                }}>
-                    {data.description}
-                </p>
-            </div>
+                <div className="listing-card__meta-grid">
+                    <div className="listing-card__meta-item">
+                        <FaBed />
+                        <span>{data.rooms} rooms</span>
+                    </div>
+                    <div className="listing-card__meta-item">
+                        <FaRulerCombined />
+                        <span>{data.sizeSqm} m²</span>
+                    </div>
+                    <div className="listing-card__meta-item">
+                        <FaCalendarAlt />
+                        <span>Ready {formatDate(data.availableFrom)}</span>
+                    </div>
+                </div>
 
-            {/* Overlay Labels (Like/Nope) - Could add these later as motion values too */}
+                <p className="listing-card__description">{data.description}</p>
+
+                <div className="listing-card__reason-list">
+                    {reasons.map((reason) => (
+                        <span className="listing-card__chip" key={reason}>
+                            {reason}
+                        </span>
+                    ))}
+                </div>
+
+                <div className="listing-card__footer">
+                    <div>
+                        <span className="section-card__eyebrow">Landlord</span>
+                        <strong>{data.landlordName || 'Private listing'}</strong>
+                    </div>
+                    <div>
+                        <span className="section-card__eyebrow">Contact</span>
+                        <strong>{data.contactEmail || 'Shared after match'}</strong>
+                    </div>
+                </div>
+            </div>
         </motion.div>
     );
 }
